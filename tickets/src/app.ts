@@ -4,6 +4,7 @@ import { errorHandler, NotFoundError, currentUser } from "@gsktickets/common";
 import cookieSession from "cookie-session";
 
 import { createTicketRouter } from "./routes/new";
+import { showTicketRouter } from "./routes/show";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(
 app.use(currentUser);
 
 app.use(createTicketRouter);
+app.use(showTicketRouter);
 
 app.all("*", () => {
   throw new NotFoundError();
