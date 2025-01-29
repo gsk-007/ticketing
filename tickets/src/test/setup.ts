@@ -8,6 +8,8 @@ declare global {
   var signin: () => string[];
 }
 
+jest.mock("../nats-wrapper");
+
 let mongo: any;
 beforeAll(async () => {
   process.env.JWT_KEY = "sdfasd";
@@ -40,7 +42,7 @@ global.signin = () => {
   // Build a JWT payload. {id, email}
 
   const payload = {
-    id: new mongoose.Types.ObjectId().toHexString(), 
+    id: new mongoose.Types.ObjectId().toHexString(),
     email: "test@test.com",
   };
 
