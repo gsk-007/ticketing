@@ -5,7 +5,7 @@ import {
   NotFoundError,
   requireAuth,
 } from "@gsktickets/common";
-import { OrderCancelledPublisher } from "../publishers/order-cancelled-publisher";
+import { OrderCancelledPublisher } from "../events/publishers/order-cancelled-publisher";
 import { natsWrapper } from "../nats-wrapper";
 
 const router = express.Router();

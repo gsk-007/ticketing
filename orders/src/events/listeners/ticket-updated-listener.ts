@@ -1,6 +1,6 @@
 import { Message } from "node-nats-streaming";
 import { Subjects, Listener, TicketUpdatedEvent } from "@gsktickets/common";
-import { Ticket } from "../models/ticket";
+import { Ticket } from "../../models/ticket";
 
 export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
   readonly subject = Subjects.TicketUpdated;
