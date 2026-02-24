@@ -1,6 +1,9 @@
 # Ticketing System
 
-Welcome to the **Ticketing System** project! This application is designed to manage ticket sales and orders efficiently using a **microservices architecture**.
+Welcome to the **Ticketing System** project!
+This application manages ticket sales and orders using a **microservices architecture** powered by Kubernetes.
+
+---
 
 ## Table of Contents
 
@@ -8,144 +11,236 @@ Welcome to the **Ticketing System** project! This application is designed to man
 - [Architecture](#architecture)
 - [Technologies Used](#technologies-used)
 - [Getting Started](#getting-started)
-- [NGINX Ingress Setup](#nginx-ingress-setup)
+- [Traefik Ingress Setup](#traefik-ingress-setup)
+- [JWT Secret Setup](#jwt-secret-setup)
 - [Folder Structure](#folder-structure)
 - [Contributing](#contributing)
-- [License](#license)
+
+---
 
 ## Features
 
-- **User Authentication**: Secure login and registration system.
-- **Ticket Management**: Create, update, and delete tickets.
-- **Order Processing**: Manage orders with expiration handling.
-- **Payment Integration**: Process payments securely.
-- **Microservices Architecture**: Decoupled services for scalability and maintainability.
-- **NGINX Ingress**: Manage incoming traffic with an Ingress Controller.
+- User Authentication
+- Ticket Management
+- Order Processing with expiration
+- Payment Integration
+- Event-driven communication (NATS)
+- Microservices architecture
+- Traefik Ingress Controller for routing
+
+---
 
 ## Architecture
 
-The application follows a **microservices architecture**, with each service responsible for a specific domain:
+The system is composed of the following services:
 
-- **Auth Service**: Handles user authentication and authorization.
-- **Tickets Service**: Manages ticket creation and updates.
-- **Orders Service**: Manages user orders and tracks their status.
-- **Payments Service**: Processes payments for orders.
-- **Expiration Service**: Handles order expiration and related events.
-- **NGINX Ingress Controller**: Manages external access to microservices.
+- **Auth Service** – Authentication & authorization
+- **Tickets Service** – Ticket CRUD operations
+- **Orders Service** – Order lifecycle management
+- **Payments Service** – Payment processing
+- **Expiration Service** – Order expiration handling
+- **Client (React)** – Frontend application
+- **Traefik Ingress Controller** – External traffic routing
+
+Traffic flow:
+
+```
+Browser
+   ↓
+Traefik
+   ↓
+Kubernetes Services
+   ↓
+Pods
+```
+
+---
 
 ## Technologies Used
 
-- **Frontend**: React.js
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB
-- **Containerization**: Docker
-- **Orchestration**: Kubernetes
-- **Ingress**: NGINX Ingress Controller
-- **Messaging**: NATS Streaming Server
-- **Other**: TypeScript, Skaffold
+- Frontend: React (Next.js)
+- Backend: Node.js, Express
+- Database: MongoDB
+- Messaging: NATS Streaming Server
+- Containerization: Docker
+- Orchestration: Kubernetes
+- Ingress: Traefik
+- Dev Workflow: Skaffold
+- Language: TypeScript
 
-## Getting Started
+---
 
-To get a local copy up and running, follow these steps:
+# Getting Started (Local Development)
 
-### 1. Clone the Repository
+## 1. Clone the Repository
+
 ```bash
 git clone https://github.com/gsk-007/ticketing.git
 cd ticketing
 ```
 
-### 2. Set Up Environment Variables
-- Create a `.env` file in each service’s directory (e.g., `/auth`, `/tickets`) based on the provided `.env.example` files.
-- Ensure you have the necessary environment variables set for each service.
+---
 
-### 3. Install Dependencies
+## 2. Install Requirements
+
+- Docker Desktop (Kubernetes enabled)
+- Skaffold
+- Helm (for Traefik installation)
+
+---
+
+## 3. Install Traefik Ingress Controller
+
 ```bash
-# For each service
-cd auth
-npm install
-# Repeat for other services: tickets, orders, payments, expiration, client
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+
+helm install traefik traefik/traefik \
+  --namespace traefik \
+  --create-namespace
 ```
 
-### 4. Install Kubernetes & Skaffold
-- Install **Kubernetes** (Minikube or Docker Desktop with Kubernetes enabled).
-- Install **Skaffold** (used for development workflows).
+Verify:
 
-### 5. Start the Application
-- Ensure Docker and Kubernetes are running.
-- Use Skaffold to start all services:
-  ```bash
-  skaffold dev
-  ```
+```bash
+kubectl get svc -n traefik
+```
 
-### 6. Set Up the Hosts File (Mac/Linux)
-For local development, map `ticketing.dev` to localhost:
+You should see:
+
+```
+traefik   LoadBalancer   localhost
+```
+
+---
+
+## 4. Update Hosts File
+
+### Mac / Linux
+
 ```bash
 echo "127.0.0.1 ticketing.dev" | sudo tee -a /etc/hosts
 ```
 
-On **Windows**, modify the file:  
-`C:\Windows\System32\drivers\etc\hosts` and add:
+### Windows
+
+Edit:
+
+```
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Add:
+
 ```
 127.0.0.1 ticketing.dev
 ```
 
-## NGINX Ingress Setup
+---
 
-To expose services using **NGINX Ingress**, follow these steps:
+# JWT Secret Setup
 
-### 1. Install the NGINX Ingress Controller
-Run the following command to install **NGINX Ingress** in Kubernetes:
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
-```
+The Auth service requires a JWT secret stored as a Kubernetes Secret.
 
-### 2. Verify NGINX Ingress is Running
-Check if the Ingress pods are running:
-```bash
-kubectl get pods -n ingress-nginx
-```
-You should see a pod named `ingress-nginx-controller`.
+### Create the Secret (Recommended Method)
 
-### 3. Apply Ingress Configuration
-Navigate to the `/infra/k8s` directory and apply the Ingress manifest:
-```bash
-kubectl apply -f infra/k8s/ingress.yaml
-```
-
-### 4. Check the Ingress Rules
 Run:
+
+```bash
+kubectl create secret generic jwt-secret \
+  --from-literal=JWT_KEY=your_super_secret_key
+```
+
+Verify:
+
+```bash
+kubectl get secrets
+```
+
+---
+
+# Running the Application
+
+Once everything is set up:
+
+```bash
+skaffold dev
+```
+
+This will:
+
+- Build all Docker images
+- Deploy Kubernetes manifests
+- Watch for file changes
+- Auto-rebuild & sync
+
+Access the app:
+
+```
+http://ticketing.dev
+```
+
+---
+
+# Traefik Ingress Setup
+
+Ingress configuration lives in:
+
+```
+infra/k8s/ingress-srv.yaml
+```
+
+Traefik routes:
+
+- `/api/users` → auth-srv
+- `/api/tickets` → tickets-srv
+- `/api/orders` → orders-srv
+- `/api/payments` → payments-srv
+- `/` → client-srv
+
+Check ingress:
+
 ```bash
 kubectl get ingress
 ```
-It should list an entry for `ticketing.dev`.
 
-## Folder Structure
+---
 
-The repository is organized as follows:
+# Folder Structure
 
 ```
 ticketing/
-├── auth/           # Authentication service
-├── client/         # Frontend client application
-├── expiration/     # Expiration service
-├── infra/          # Infrastructure configurations (K8s manifests)
-│   ├── k8s/        # Kubernetes manifests
-│   ├── ingress.yaml # Ingress configuration
-├── orders/         # Orders service
-├── payments/       # Payments service
-├── tickets/        # Tickets service
-├── .gitignore
-├── .prettierrc
-└── skaffold.yaml
+├── auth/
+├── client/
+├── expiration/
+├── infra/
+│   ├── k8s/
+│   │   ├── ingress-srv.yaml
+│   │   ├── jwt-secret.yaml (optional)
+├── orders/
+├── payments/
+├── tickets/
+├── skaffold.yaml
 ```
 
-## Contributing
+---
 
-Contributions are welcome! Please follow these steps:
+# Production Notes (GCP / GKE)
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes (`git commit -m 'Add YourFeature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Open a Pull Request.
+If deploying to GKE:
 
+- Set `push: true` in `skaffold.yaml`
+- Use Artifact Registry or GCR images
+- Use proper TLS certificates
+- Use external secret management (GCP Secret Manager)
+
+---
+
+# Contributing
+
+1. Fork the repository
+2. Create a branch
+3. Commit your changes
+4. Push and open a PR
+
+---
